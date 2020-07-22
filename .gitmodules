@@ -1,0 +1,6 @@
+[submodule "btm/ext/rv-monitor"]
+	path = btm/ext/rv-monitor
+	url = https://github.com/runtimeverification/rv-monitor.git
+[submodule "btm/ext/javamop"]
+	path = btm/ext/javamop
+	url = https://github.com/runtimeverification/javamop.git
