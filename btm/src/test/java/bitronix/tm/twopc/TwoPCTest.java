@@ -67,7 +67,7 @@ public class TwoPCTest extends TestCase {
      * XAResource 2 resolution: successful
      *
      */
-    public void testExpectNoHeuristic() throws Exception {
+    public void testTwoPCSuccess() throws Exception {
         tm.begin();
         tm.setTransactionTimeout(10); // TX must not timeout
 

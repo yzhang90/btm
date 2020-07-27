@@ -154,7 +154,11 @@ public final class Preparer extends AbstractPhaseEngine {
                 XAResourceHolderState resourceHolder = getResource();
                 if (log.isDebugEnabled()) { log.debug("preparing resource " + resourceHolder); }
 
-                int vote = resourceHolder.getXAResource().prepare(resourceHolder.getXid());
+                XAResourceWrapper xar = new XAResourceWrapper(resourceHolder.getXAResource());
+                if(resourceHolder.getTransaction() == null) {
+                    System.out.println("Transaction is null!!");
+                }
+                int vote = xar.prepare(resourceHolder.getTransaction(), resourceHolder.getXid());
                 if (vote != XAResource.XA_RDONLY) {
                     preparedResources.add(resourceHolder);
                 }

@@ -11,8 +11,9 @@ import javax.transaction.xa.XAResource;
 import bitronix.tm.twopc.Committer;
 import bitronix.tm.twopc.Preparer;
 import bitronix.tm.twopc.Rollbacker;
+import bitronix.tm.twopc.XAResourceWrapper;
 
-twoPhaseCommit() {
+twoPhaseCommit(Transaction tx) {
 
     Set<XAResource> participants = new HashSet<XAResource>();
     Set<XAResource> prepared = new HashSet<XAResource>();
@@ -45,11 +46,12 @@ twoPhaseCommit() {
         }
     }
 
-    event xaPrepareSuccess after (XAResource xa) returning (int result):
-        execution(* XAResource.prepare(..))
-        && target(xa) {
+    event xaPrepareSuccess after (Transaction tx, XAResourceWrapper xar) returning (int result):
+        execution(* XAResourceWrapper.prepare(Transaction+, ..))
+        && target(xar)
+        && args(tx, ..) {
             if (state == Status.STATUS_ACTIVE || state == Status.STATUS_PREPARING) {
-                prepared.add(xa);
+                prepared.add(xar.getXAResource());
                 state = Status.STATUS_PREPARING;
                 try {
                     System.out.println(String.format("participant prepared. " +
@@ -64,9 +66,9 @@ twoPhaseCommit() {
             }
     }
 
-    event prepareFailure after (XAResource xa) throwing (XAException e):
-        execution(* XAResource.prepare(..))
-        && target(xa) {
+    event xaPrepareFailure after (Transaction tx) throwing (XAException e):
+        execution(* XAResourceWrapper.prepare(Transaction+, ..))
+        && args(tx, ..) {
             if (state == Status.STATUS_ACTIVE || state == Status.STATUS_PREPARING) {
                 System.out.println("participant prepare failed.");
             } else {
@@ -84,6 +86,7 @@ twoPhaseCommit() {
             } catch (Exception e) {}
     }
 
+    // Implementation specific event
     event prepareEndException after (Transaction tx) throwing (RollbackException re):
         execution(* Preparer.prepare(Transaction+, ..))
         && args(tx, ..) {
@@ -99,11 +102,12 @@ twoPhaseCommit() {
     }
 
 
-    event xaRollbackSuccess after (XAResource xa) :
-        execution(* XAResource.rollback(..))
-        && target(xa) {
+    event xaRollbackSuccess after (Transaction tx, XAResourceWrapper xar) :
+        execution(* XAResourceWrapper.rollback(Transaction+, ..))
+        && target(xar)
+        && args(tx, ..) {
             if (state == Status.STATUS_MARKED_ROLLBACK || state == Status.STATUS_ROLLING_BACK) {
-                rolledback.add(xa);
+                rolledback.add(xar.getXAResource());
                 state = Status.STATUS_ROLLING_BACK;
                 try {
                     System.out.println(String.format("participant rolledback. " +
@@ -128,11 +132,12 @@ twoPhaseCommit() {
     }
 
 
-    event xaCommitSuccess after (XAResource xa) :
-        execution(* XAResource.commit(..))
-        && target(xa) {
+    event xaCommitSuccess after (Transaction tx, XAResourceWrapper xar) :
+        execution(* XAResourceWrapper.commit(Transaction+, ..))
+        && target(xar)
+        && args(tx, ..) {
             if (state == Status.STATUS_PREPARED || state == Status.STATUS_COMMITTING) {
-                committed.add(xa);
+                committed.add(xar.getXAResource());
                 state = Status.STATUS_COMMITTING;
                 try {
                     System.out.println(String.format("participant committed. " +

@@ -71,7 +71,7 @@
             <optional>true</optional>
         </dependency>
 
-	<dependency>
+	    <dependency>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>aspectj-maven-plugin</artifactId>
             <version>1.11</version>

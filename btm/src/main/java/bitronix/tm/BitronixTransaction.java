@@ -118,7 +118,8 @@ public class BitronixTransaction implements Transaction, BitronixTransactionMBea
         if (resourceHolder == null)
             throw new BitronixSystemException("unknown XAResource " + xaResource + ", it does not belong to a registered resource");
 
-        XAResourceHolderState resourceHolderState = new XAResourceHolderState(resourceHolder, resourceHolder.getResourceBean());
+        XAResourceHolderState resourceHolderState
+            = new XAResourceHolderState(this, resourceHolder, resourceHolder.getResourceBean());
 
         // resource timeout must be set here so manually enlisted resources can receive it
         resourceHolderState.setTransactionTimeoutDate(timeoutDate);

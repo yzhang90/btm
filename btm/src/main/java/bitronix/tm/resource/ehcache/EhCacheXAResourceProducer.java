@@ -140,7 +140,7 @@ public final class EhCacheXAResourceProducer extends ResourceBean implements XAR
         }
 
         recoveryXAResourceHolder = new RecoveryXAResourceHolder(xaResourceHolders.values().iterator().next());
-        return new XAResourceHolderState(recoveryXAResourceHolder, this);
+        return new XAResourceHolderState(null, recoveryXAResourceHolder, this);
     }
 
     /**

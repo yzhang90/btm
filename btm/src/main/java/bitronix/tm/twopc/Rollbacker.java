@@ -177,7 +177,11 @@ public final class Rollbacker extends AbstractPhaseEngine {
         private void rollbackResource(XAResourceHolderState resourceHolder) throws XAException {
             try {
                 if (log.isDebugEnabled()) { log.debug("trying to rollback resource " + resourceHolder); }
-                resourceHolder.getXAResource().rollback(resourceHolder.getXid());
+                XAResourceWrapper xar = new XAResourceWrapper(resourceHolder.getXAResource());
+                if(resourceHolder.getTransaction() == null) {
+                    System.out.println("Transaction is null!!");
+                }
+                xar.rollback(resourceHolder.getTransaction(), resourceHolder.getXid());
                 rolledbackResources.add(resourceHolder);
                 if (log.isDebugEnabled()) { log.debug("rolled back resource " + resourceHolder); }
             } catch (XAException ex) {

@@ -205,7 +205,11 @@ public final class Committer extends AbstractPhaseEngine {
         private void commitResource(XAResourceHolderState resourceHolder, boolean onePhase) throws XAException {
             try {
                 if (log.isDebugEnabled()) { log.debug("committing resource " + resourceHolder + (onePhase ? " (with one-phase optimization)" : "")); }
-                resourceHolder.getXAResource().commit(resourceHolder.getXid(), onePhase);
+                XAResourceWrapper xar = new XAResourceWrapper(resourceHolder.getXAResource());
+                if(resourceHolder.getTransaction() == null) {
+                    System.out.println("Transaction is null!!");
+                }
+                xar.commit(resourceHolder.getTransaction(), resourceHolder.getXid(), onePhase);
                 committedResources.add(resourceHolder);
                 if (log.isDebugEnabled()) { log.debug("committed resource " + resourceHolder); }
             } catch (XAException ex) {

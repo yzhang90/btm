@@ -23,6 +23,7 @@ import bitronix.tm.utils.MonotonicClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import java.util.Date;
@@ -45,6 +46,7 @@ public class XAResourceHolderState {
 
     private final static Logger log = LoggerFactory.getLogger(XAResourceHolderState.class);
 
+    private final Transaction tx;
     private final ResourceBean bean;
     private final XAResourceHolder xaResourceHolder;
     private volatile BitronixXid xid;
@@ -56,7 +58,8 @@ public class XAResourceHolderState {
     private volatile boolean failed;
     private volatile int hashCode;
 
-    public XAResourceHolderState(XAResourceHolder resourceHolder, ResourceBean bean) {
+    public XAResourceHolderState(Transaction transaction, XAResourceHolder resourceHolder, ResourceBean bean) {
+        this.tx = transaction;
         this.bean = bean;
         this.xaResourceHolder = resourceHolder;
 
@@ -68,7 +71,12 @@ public class XAResourceHolderState {
         hashCode = 17 * bean.hashCode();
     }
 
-    public XAResourceHolderState(XAResourceHolderState resourceHolderState) {
+    public XAResourceHolderState(XAResourceHolder resourceHolder, ResourceBean bean) {
+        this(null, resourceHolder, bean);
+    }
+
+    public XAResourceHolderState(Transaction transaction, XAResourceHolderState resourceHolderState) {
+        this.tx = transaction;
         this.bean = resourceHolderState.bean;
         this.xaResourceHolder = resourceHolderState.xaResourceHolder;
 
@@ -78,6 +86,10 @@ public class XAResourceHolderState {
         isTimeoutAlreadySet = false;
         xid = null;
         hashCode = 17 * bean.hashCode();
+    }
+
+    public XAResourceHolderState(XAResourceHolderState resourceHolderState) {
+        this(null, resourceHolderState);
     }
 
     public BitronixXid getXid() {
@@ -90,6 +102,10 @@ public class XAResourceHolderState {
             throw new BitronixSystemException("a XID has already been assigned to " + this);
         this.xid = xid;
         hashCode = 17 * (bean.hashCode() + (xid != null ? xid.hashCode() : 0));
+    }
+
+    public Transaction getTransaction() {
+        return tx;
     }
 
     public XAResource getXAResource() {

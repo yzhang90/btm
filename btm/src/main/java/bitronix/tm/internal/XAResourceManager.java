@@ -139,7 +139,8 @@ public class XAResourceManager {
         return false;
     }
 
-    /**
+    /*
+        this.tx = transaction;*
      * Suspend all enlisted resources from the current transaction context.
      * @throws XAException if the resource threw an exception during suspend.
      */
@@ -167,7 +168,7 @@ public class XAResourceManager {
 
             // If a prepared statement is (re-)used after suspend/resume is performed its XAResource needs to be
             // re-enlisted. This must be done outside this loop or that will confuse the iterator!
-            toBeReEnlisted.add(new XAResourceHolderState(xaResourceHolderState));
+            toBeReEnlisted.add(new XAResourceHolderState(null, xaResourceHolderState));
         }
 
         if (toBeReEnlisted.size() > 0 && log.isDebugEnabled()) log.debug("re-enlisting " + toBeReEnlisted.size() + " resource(s)");
