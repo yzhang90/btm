@@ -27,22 +27,24 @@ twoPhaseCommit(Transaction tx) {
         execution(* Transaction.enlistResource(XAResource))
         && target(tx)
         && args(xa) {
-        participants.add(xa);
-        System.out.println("add resource");
+        if (state == Status.STATUS_NO_TRANSACTION) {
+            // state Init -> state SendAndReceivePrepareMsgs
+            participants.add(xa);
+            System.out.println("add resource");
+        } else {
+            System.out.println("ERROR: invalid transition!");
+        }
     }
 
     event startTx before (Transaction tx):
         execution(* Transaction.commit())
         && target(tx) {
         if (state == Status.STATUS_NO_TRANSACTION) {
+            // state Init -> state Init
             transaction = tx;
-            state = Status.STATUS_ACTIVE;
-            try {
-                System.out.println(String.format("start transaction. " +
-                                                 "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
-            } catch (Exception e) {}
+            state = Status.STATUS_PREPARING;
         } else {
-            System.out.println("violation!");
+            System.out.println("ERROR: invalid transition!");
         }
     }
 
@@ -50,7 +52,8 @@ twoPhaseCommit(Transaction tx) {
         execution(* XAResourceWrapper.prepare(Transaction+, ..))
         && target(xar)
         && args(tx, ..) {
-            if (state == Status.STATUS_ACTIVE || state == Status.STATUS_PREPARING) {
+            if (state == Status.STATUS_PREPARING) {
+                // state SendAndReceivePrepareMsgs -> state SendAndReceivePrepareMsgs
                 prepared.add(xar.getXAResource());
                 state = Status.STATUS_PREPARING;
                 try {
@@ -58,123 +61,89 @@ twoPhaseCommit(Transaction tx) {
                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
                 } catch (Exception e) {}
                 if(prepared.size() == participants.size()) {
-                    state = Status.STATUS_PREPARED;
+                    // state SendAndReceivePrepareMsgs -> state SendAndReceiveCommitMsgs
+                    state = Status.STATUS_COMMITTING;
                     System.out.println("all participants prepared.");
                 }
+            } else if (state == Status.STATUS_ROLLING_BACK) {
+                // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
+                state = Status.STATUS_ROLLING_BACK;
             } else {
-                System.out.println("violation!");
+                System.out.println("ERROR: invalid transition!");
             }
     }
 
     event xaPrepareFailure after (Transaction tx) throwing (XAException e):
         execution(* XAResourceWrapper.prepare(Transaction+, ..))
         && args(tx, ..) {
-            if (state == Status.STATUS_ACTIVE || state == Status.STATUS_PREPARING) {
+            if (state == Status.STATUS_PREPARING) {
+                // state SendAndReceivePrepareMsgs -> state SendAndReceiveRollbackMsgs
+                state = Status.STATUS_ROLLING_BACK;
                 System.out.println("participant prepare failed.");
+            } else if (state == Status.STATUS_ROLLING_BACK) {
+                // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
+                state = Status.STATUS_ROLLING_BACK;
             } else {
-                System.out.println("violation!");
+                System.out.println("ERROR: invalid transition!");
             }
     }
-
-    // Implementation specific event
-    event prepareEndReturn after (Transaction tx) returning (Object o):
-        execution(* Preparer.prepare(Transaction+, ..))
-        && args(tx, ..) {
-            try {
-                System.out.println(String.format("end of prepare phase: success. " +
-                                                  "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
-            } catch (Exception e) {}
-    }
-
-    // Implementation specific event
-    event prepareEndException after (Transaction tx) throwing (RollbackException re):
-        execution(* Preparer.prepare(Transaction+, ..))
-        && args(tx, ..) {
-            if (state == Status.STATUS_ACTIVE || state == Status.STATUS_PREPARING) {
-                state = Status.STATUS_MARKED_ROLLBACK;
-                try {
-                    System.out.println(String.format("end of prepare phase: failure. " +
-                                                     "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
-                } catch (Exception e) {}
-            } else {
-                System.out.println("violation!");
-            }
-    }
-
 
     event xaRollbackSuccess after (Transaction tx, XAResourceWrapper xar) :
         execution(* XAResourceWrapper.rollback(Transaction+, ..))
         && target(xar)
         && args(tx, ..) {
-            if (state == Status.STATUS_MARKED_ROLLBACK || state == Status.STATUS_ROLLING_BACK) {
+            if (state == Status.STATUS_ROLLING_BACK) {
+                // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
                 rolledback.add(xar.getXAResource());
                 state = Status.STATUS_ROLLING_BACK;
                 try {
                     System.out.println(String.format("participant rolledback. " +
                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
                 } catch (Exception e) {}
-                if(rolledback.size() == participants.size()) {
-                    state = Status.STATUS_ROLLEDBACK;
-                    System.out.println("all participants rolledback.");
-                }
+            } else {
+                System.out.println("ERROR: invalid transition!");
             }
     }
-
-
-    // Implementation specific event
-    event rollbackEnd after (Transaction tx):
-        execution(* Rollbacker.rollback(Transaction+, ..)) 
-        && args(tx, ..) {
-            try {
-                System.out.println(String.format("end of rollback phase. " +
-                                                  "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
-            } catch (Exception e) {}
-    }
-
 
     event xaCommitSuccess after (Transaction tx, XAResourceWrapper xar) :
         execution(* XAResourceWrapper.commit(Transaction+, ..))
         && target(xar)
         && args(tx, ..) {
-            if (state == Status.STATUS_PREPARED || state == Status.STATUS_COMMITTING) {
+            if (state == Status.STATUS_COMMITTING) {
+                // state SendAndReceiveCommitMsgs -> state SendAndReceiveCommitMsgs
                 committed.add(xar.getXAResource());
                 state = Status.STATUS_COMMITTING;
                 try {
                     System.out.println(String.format("participant committed. " +
                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
                 } catch (Exception e) {}
-                if(committed.size() == participants.size()) {
-                    state = Status.STATUS_COMMITTED;
-                    System.out.println("all participants committed.");
-                }
             } else {
-                System.out.println("violation!");
+                System.out.println("ERROR: invalid transition!");
             }
     }
-
-    // Implementation specific event
-    event commitEnd after (Transaction tx):
-        execution(* Committer.commit(Transaction+, ..))
-        && args(tx, ..) {
-            try {
-                System.out.println(String.format("end of commit phase. " +
-                                                  "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
-            } catch (Exception e) {}
-    }
-
 
     event endTx after (Transaction tx):
          execution(* Transaction.commit())
          && target(tx) {
-             if (state == Status.STATUS_ROLLEDBACK || state == Status.STATUS_COMMITTED) {
-                 try {
-                     System.out.println(String.format("end of transaction. " +
-                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
-                 } catch (Exception e) {}
+             if (state == Status.STATUS_ROLLING_BACK) {
+                 if (rolledback.size() == participants.size()) {
+                     state = Status.STATUS_ROLLEDBACK;
+                 } else {
+                     System.out.println("ERROR: not all participants rolledback.");
+                 }
+             } else if (state == Status.STATUS_COMMITTING) {
+                 if (committed.size() == participants.size()) {
+                     state = Status.STATUS_COMMITTED;
+                 } else {
+                     System.out.println("ERROR: not all participants committed.");
+                 }
              } else {
-                 System.out.println("violation!");
+                 System.out.println("ERROR: invalid transition!");
              }
+
+             try {
+                 System.out.println(String.format("end of transaction. " +
+                                                  "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
+             } catch (Exception e) {}
     }
-
-
 }
