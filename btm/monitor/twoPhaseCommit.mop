@@ -28,7 +28,7 @@ twoPhaseCommit(Transaction tx) {
         && target(tx)
         && args(xa) {
         if (state == Status.STATUS_NO_TRANSACTION) {
-            // state Init -> state SendAndReceivePrepareMsgs
+            // state Init -> state Init
             participants.add(xa);
             System.out.println("add resource");
         } else {
@@ -40,7 +40,7 @@ twoPhaseCommit(Transaction tx) {
         execution(* Transaction.commit())
         && target(tx) {
         if (state == Status.STATUS_NO_TRANSACTION) {
-            // state Init -> state Init
+            // state Init -> state SendAndReceivePrepareMsgs
             transaction = tx;
             state = Status.STATUS_PREPARING;
         } else {
