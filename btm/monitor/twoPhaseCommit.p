@@ -1,12 +1,12 @@
 event addResource: machine
 event startTx:()
 event sendPrepare: machine
-event receivePrepareSuccessful: machine
+event receivePrepareSuccess: machine
 event receivePrepareFailure: machine
 event sendRollback: machine
-event receiveCommitSuccessful: machine
+event receiveRollbackSuccess: machine
 event sendCommit: machine
-event receiveCommitSuccessful: machine
+event receiveCommitSuccess: machine
 event endTx:()
 
 spec twoPhaseCommit {
@@ -33,7 +33,7 @@ spec twoPhaseCommit {
             countPrepareMsgs += 1;
         }
 
-        on receivePrepareSuccessful do (m: machine) {
+        on receivePrepareSuccess do (m: machine) {
             countPreparedMachines += 1;
             if (countPrepareMsgs == sizeof(participants) && countPreparedMachines == sizeof(participants)) {
                 goto SendAndReceiveCommitMsgs;
@@ -46,7 +46,10 @@ spec twoPhaseCommit {
     }
 
     state SendAndReceiveRollbackMsgs {
-        on receivePrepareSuccessful do (m: machine) {
+        on sendPrepare do (m: machine) {
+        }
+
+        on receivePrepareSuccess do (m: machine) {
         }
 
         on receivePrepareFailure do (m: machine) {
@@ -56,14 +59,13 @@ spec twoPhaseCommit {
             countRollbackMsgs += 1;
         }
 
-        on receiveRollbackSuccessful do (m: machine) {
+        on receiveRollbackSuccess do (m: machine) {
             countRolledbackMachines += 1;
         }
 
-	on endTx do () {
-	    assert(countRollbackMsgs == sizeof(participants) && countRollbackMachines == sizeof(participants));
-	}
-
+        on endTx do () {
+            assert(countRollbackMsgs == sizeof(participants) && countRollbackMachines == sizeof(participants));
+        }
     }
 
     state SendAndReceiveCommitMsgs {
@@ -71,13 +73,12 @@ spec twoPhaseCommit {
             countCommitMsgs += 1;
         }
 
-        on receiveCommitSuccessful do (m: machine) {
+        on receiveCommitSuccess do (m: machine) {
             countCommitMachines += 1;
         }
 
-	on endTx do () {
+        on endTx do () {
             assert(countCommitMsgs == sizeof(participants) && countCommittedMachines == sizeof(participants));
-	}
+        }
     }
 }
-
