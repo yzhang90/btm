@@ -55,7 +55,6 @@ twoPhaseCommit(Transaction tx) {
             if (state == Status.STATUS_PREPARING) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceivePrepareMsgs
                 prepared.add(xar.getXAResource());
-                state = Status.STATUS_PREPARING;
                 try {
                     System.out.println(String.format("participant prepared. " +
                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
@@ -67,7 +66,6 @@ twoPhaseCommit(Transaction tx) {
                 }
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
-                state = Status.STATUS_ROLLING_BACK;
             } else {
                 System.out.println("ERROR: invalid transition!");
             }
@@ -82,7 +80,6 @@ twoPhaseCommit(Transaction tx) {
                 System.out.println("participant prepare failed.");
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
-                state = Status.STATUS_ROLLING_BACK;
             } else {
                 System.out.println("ERROR: invalid transition!");
             }
@@ -95,7 +92,6 @@ twoPhaseCommit(Transaction tx) {
             if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
                 rolledback.add(xar.getXAResource());
-                state = Status.STATUS_ROLLING_BACK;
                 try {
                     System.out.println(String.format("participant rolledback. " +
                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
@@ -112,7 +108,6 @@ twoPhaseCommit(Transaction tx) {
             if (state == Status.STATUS_COMMITTING) {
                 // state SendAndReceiveCommitMsgs -> state SendAndReceiveCommitMsgs
                 committed.add(xar.getXAResource());
-                state = Status.STATUS_COMMITTING;
                 try {
                     System.out.println(String.format("participant committed. " +
                                                      "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
