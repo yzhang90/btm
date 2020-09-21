@@ -15,5 +15,6 @@ progress "generate aspectJ and rvm files"
 (   ( mkdir -p "$gen_src_dir/aspectJ" && mkdir -p "$gen_src_dir/java" && \
       cd "$repo_dir/monitor" && \
       "$javamop_bin/javamop" -debug -d "$gen_src_dir/aspectJ" -merge *.mop && \
-      "$rvmonitor_bin/rv-monitor" -merge -d "$gen_src_dir/java" *.rvm ) \
+      "$rvmonitor_bin/rv-monitor" -merge -d "$gen_src_dir/java" *.rvm && \
+      cp $repo_dir/monitor/dependencies/*.java "$gen_src_dir/java" ) \
  || ( rm -f "$gen_src_dir/aspectJ" ; rm -f "$gen_src_dir/java/*.java" ))

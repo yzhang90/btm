@@ -30,7 +30,7 @@ twoPhaseCommit(Transaction tx) {
         if (state == Status.STATUS_NO_TRANSACTION) {
             // state Init -> state Init
             participants.add(xa);
-            System.out.println("add resource");
+            System.out.println("Add participant");
         } else {
             System.out.println("ERROR: invalid transition!");
         }
@@ -56,13 +56,15 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceivePrepareMsgs
                 prepared.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("participant prepared. " +
-                                                     "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
+                    System.out.println(String.format("Participant prepared. " +
+                                                     "transaction state: %s, monitor state: %s",
+                                                     MopUtils.stateToString(transaction.getStatus()),
+                                                     MopUtils.stateToString(state)));
                 } catch (Exception e) {}
                 if(prepared.size() == participants.size()) {
                     // state SendAndReceivePrepareMsgs -> state SendAndReceiveCommitMsgs
                     state = Status.STATUS_COMMITTING;
-                    System.out.println("all participants prepared.");
+                    System.out.println("All participants prepared.");
                 }
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
@@ -93,8 +95,10 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
                 rolledback.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("participant rolledback. " +
-                                                     "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
+                    System.out.println(String.format("Participant rolledback. " +
+                                                     "transaction state: %s, monitor state: %s",
+                                                     MopUtils.stateToString(transaction.getStatus()),
+                                                     MopUtils.stateToString(state)));
                 } catch (Exception e) {}
             } else {
                 System.out.println("ERROR: invalid transition!");
@@ -109,11 +113,13 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceiveCommitMsgs -> state SendAndReceiveCommitMsgs
                 committed.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("participant committed. " +
-                                                     "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
+                    System.out.println(String.format("Participant committed. " +
+                                                     "transaction state: %s, monitor state: %s",
+                                                      MopUtils.stateToString(transaction.getStatus()),
+                                                      MopUtils.stateToString(state)));
                 } catch (Exception e) {}
             } else {
-                System.out.println("ERROR: invalid transition!");
+                System.out.println(String.format("ERROR: Commit operation is not allowed in the state %s", MopUtils.stateToString(state)));
             }
     }
 
@@ -124,21 +130,23 @@ twoPhaseCommit(Transaction tx) {
                  if (rolledback.size() == participants.size()) {
                      state = Status.STATUS_ROLLEDBACK;
                  } else {
-                     System.out.println("ERROR: not all participants rolledback.");
+                     System.out.println("ERROR: Not all participants rolledback.");
                  }
              } else if (state == Status.STATUS_COMMITTING) {
                  if (committed.size() == participants.size()) {
                      state = Status.STATUS_COMMITTED;
                  } else {
-                     System.out.println("ERROR: not all participants committed.");
+                     System.out.println("ERROR: Not all participants committed.");
                  }
              } else {
                  System.out.println("ERROR: invalid transition!");
              }
 
              try {
-                 System.out.println(String.format("end of transaction. " +
-                                                  "transaction state: %d, monitor state: %d", transaction.getStatus(), state));
+                 System.out.println(String.format("End of transaction. " +
+                                                  "transaction state: %s, monitor state: %s",
+                                                  MopUtils.stateToString(transaction.getStatus()),
+                                                  MopUtils.stateToString(state)));
              } catch (Exception e) {}
     }
 }
