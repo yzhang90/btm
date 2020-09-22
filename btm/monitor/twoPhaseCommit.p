@@ -1,40 +1,48 @@
-event addResource: machine
-event startTx:()
-event sendPrepare: machine
-event receivePrepareSuccess: machine
-event receivePrepareFailure: machine
-event sendRollback: machine
-event receiveRollbackSuccess: machine
-event sendCommit: machine
-event receiveCommitSuccess: machine
-event endTx:()
+event addResource: machine;
+event startTx;
+event sendPrepare: machine;
+event receivePrepareSuccess: machine;
+event receivePrepareFailure: machine;
+event sendRollback: machine;
+event receiveRollbackSuccess: machine;
+event sendCommit: machine;
+event receiveCommitSuccess: machine;
+event endTx;
 
-spec twoPhaseCommit {
-    var participants: set[machine];
-    var countPrepareMsgs: int = 0;
-    var countPreparedMachines: int = 0;
-    var countRollbackMsgs: int = 0;
-    var countRolledbackMachines: int  = 0;
-    var countCommitMsgs: int = 0;
-    var countCommittedMachines: int = 0; 
+spec twoPhaseCommit observes addResource, startTx, sendPrepare, receivePrepareSuccess, receivePrepareFailure, sendRollback, receiveRollbackSuccess, sendCommit, receiveCommitSuccess, endTx {
+    var participants: map[machine, bool];
+    var countPrepareMsgs: int;
+    var countPreparedMachines: int;
+    var countRollbackMsgs: int;
+    var countRolledbackMachines: int;
+    var countCommitMsgs: int;
+    var countCommittedMachines: int; 
 
     start state Init {
+        entry {
+            countPrepareMsgs = 0;
+            countPreparedMachines = 0;
+            countRollbackMsgs = 0;
+            countRolledbackMachines = 0;
+            countCommitMsgs = 0;
+            countCommittedMachines = 0;
+        }
         on addResource do (m: machine) {
-            participants += m;
+            participants[m] = true;
         }
 
-        on startTx do () {
+        on startTx do {
             goto SendAndReceivePrepareMsgs;       
         }
     }
 
     state SendAndReceivePrepareMsgs {
         on sendPrepare do (m: machine) {
-            countPrepareMsgs += 1;
+            countPrepareMsgs = countPrepareMsgs + 1;
         }
 
         on receivePrepareSuccess do (m: machine) {
-            countPreparedMachines += 1;
+            countPreparedMachines = countPreparedMachines + 1;
             if (countPrepareMsgs == sizeof(participants) && countPreparedMachines == sizeof(participants)) {
                 goto SendAndReceiveCommitMsgs;
             }
@@ -56,28 +64,28 @@ spec twoPhaseCommit {
         }
 
         on sendRollback do (m: machine) {
-            countRollbackMsgs += 1;
+            countRollbackMsgs = countRollbackMsgs + 1;
         }
 
         on receiveRollbackSuccess do (m: machine) {
-            countRolledbackMachines += 1;
+            countRolledbackMachines = countRolledbackMachines + 1;
         }
 
-        on endTx do () {
-            assert(countRollbackMsgs == sizeof(participants) && countRollbackMachines == sizeof(participants));
+        on endTx do {
+            assert(countRollbackMsgs == sizeof(participants) && countRolledbackMachines == sizeof(participants));
         }
     }
 
     state SendAndReceiveCommitMsgs {
         on sendCommit do (m: machine) {
-            countCommitMsgs += 1;
+            countCommitMsgs = countCommitMsgs + 1;
         }
 
         on receiveCommitSuccess do (m: machine) {
-            countCommitMachines += 1;
+            countCommittedMachines = countCommittedMachines + 1;
         }
 
-        on endTx do () {
+        on endTx do {
             assert(countCommitMsgs == sizeof(participants) && countCommittedMachines == sizeof(participants));
         }
     }
