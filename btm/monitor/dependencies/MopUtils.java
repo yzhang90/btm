@@ -20,7 +20,7 @@ class MopUtils {
         } else if (state == 9) {
             return "Rollingback";
         } else {
-            return "Unknown";
+            return "Init";
         }
     }
 

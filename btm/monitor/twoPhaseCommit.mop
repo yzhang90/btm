@@ -30,7 +30,12 @@ twoPhaseCommit(Transaction tx) {
         if (state == Status.STATUS_NO_TRANSACTION) {
             // state Init -> state Init
             participants.add(xa);
-            System.out.println("Add participant");
+            try {
+                System.out.println(String.format("Transition: AddParticipant. " +
+                                                 "transaction state: %s, monitor state: %s",
+                                                 MopUtils.stateToString(tx.getStatus()),
+                                                 MopUtils.stateToString(state)));
+            } catch (Exception e) {}
         } else {
             System.out.println("ERROR: invalid transition!");
         }
@@ -43,6 +48,7 @@ twoPhaseCommit(Transaction tx) {
             // state Init -> state SendAndReceivePrepareMsgs
             transaction = tx;
             state = Status.STATUS_PREPARING;
+            System.out.println("Transition: StartTx");
         } else {
             System.out.println("ERROR: invalid transition!");
         }
@@ -56,7 +62,7 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceivePrepareMsgs
                 prepared.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("Participant prepared. " +
+                    System.out.println(String.format("Transition: ReceivePrepareSuccess. " +
                                                      "transaction state: %s, monitor state: %s",
                                                      MopUtils.stateToString(transaction.getStatus()),
                                                      MopUtils.stateToString(state)));
@@ -64,7 +70,7 @@ twoPhaseCommit(Transaction tx) {
                 if(prepared.size() == participants.size()) {
                     // state SendAndReceivePrepareMsgs -> state SendAndReceiveCommitMsgs
                     state = Status.STATUS_COMMITTING;
-                    System.out.println("All participants prepared.");
+                    System.out.println("Transition: All participants prepared.");
                 }
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
@@ -79,7 +85,12 @@ twoPhaseCommit(Transaction tx) {
             if (state == Status.STATUS_PREPARING) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceiveRollbackMsgs
                 state = Status.STATUS_ROLLING_BACK;
-                System.out.println("participant prepare failed.");
+                try {
+                    System.out.println(String.format("Transition: ReceivePrepareFailure. " +
+                                                     "transaction state: %s, monitor state: %s",
+                                                     MopUtils.stateToString(transaction.getStatus()),
+                                                     MopUtils.stateToString(state)));
+                } catch (Exception ex) {}
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
             } else {
@@ -95,7 +106,7 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
                 rolledback.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("Participant rolledback. " +
+                    System.out.println(String.format("Transition: ReceiveRollbackSuccess. " +
                                                      "transaction state: %s, monitor state: %s",
                                                      MopUtils.stateToString(transaction.getStatus()),
                                                      MopUtils.stateToString(state)));
@@ -113,13 +124,19 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceiveCommitMsgs -> state SendAndReceiveCommitMsgs
                 committed.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("Participant committed. " +
+                    System.out.println(String.format("Transition: ReceiveCommitSuccess. " +
                                                      "transaction state: %s, monitor state: %s",
                                                       MopUtils.stateToString(transaction.getStatus()),
                                                       MopUtils.stateToString(state)));
                 } catch (Exception e) {}
             } else {
-                System.out.println(String.format("ERROR: Commit operation is not allowed in the state %s", MopUtils.stateToString(state)));
+                try {
+                    System.out.println(String.format("ERROR: Commit operation is not allowed in the state %s. " +
+                                                     "transaction state: %s, monitor state: %s",
+                                                     MopUtils.stateToString(state),
+                                                     MopUtils.stateToString(transaction.getStatus()),
+                                                     MopUtils.stateToString(state)));
+                } catch (Exception e) {}
             }
     }
 
@@ -143,7 +160,7 @@ twoPhaseCommit(Transaction tx) {
              }
 
              try {
-                 System.out.println(String.format("End of transaction. " +
+                 System.out.println(String.format("Transition: EndTx. " +
                                                   "transaction state: %s, monitor state: %s",
                                                   MopUtils.stateToString(transaction.getStatus()),
                                                   MopUtils.stateToString(state)));
