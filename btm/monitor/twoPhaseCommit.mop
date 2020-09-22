@@ -31,7 +31,8 @@ twoPhaseCommit(Transaction tx) {
             // state Init -> state Init
             participants.add(xa);
             try {
-                System.out.println(String.format("Transition: AddParticipant. " +
+                System.out.println(String.format("[After execute Transaction.enlistResource(..)]" +
+                                                 "Transition: AddParticipant. " +
                                                  "transaction state: %s, monitor state: %s",
                                                  MopUtils.stateToString(tx.getStatus()),
                                                  MopUtils.stateToString(state)));
@@ -48,7 +49,7 @@ twoPhaseCommit(Transaction tx) {
             // state Init -> state SendAndReceivePrepareMsgs
             transaction = tx;
             state = Status.STATUS_PREPARING;
-            System.out.println("Transition: StartTx");
+            System.out.println("[Before execute Transaction.commit()]Transition: StartTx");
         } else {
             System.out.println("ERROR: invalid transition!");
         }
@@ -62,7 +63,8 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceivePrepareMsgs
                 prepared.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("Transition: ReceivePrepareSuccess. " +
+                    System.out.println(String.format("[After execute XAResourceWrapper.prepare(..)]" +
+                                                     "Transition: ReceivePrepareSuccess. " +
                                                      "transaction state: %s, monitor state: %s",
                                                      MopUtils.stateToString(transaction.getStatus()),
                                                      MopUtils.stateToString(state)));
@@ -70,7 +72,7 @@ twoPhaseCommit(Transaction tx) {
                 if(prepared.size() == participants.size()) {
                     // state SendAndReceivePrepareMsgs -> state SendAndReceiveCommitMsgs
                     state = Status.STATUS_COMMITTING;
-                    System.out.println("Transition: All participants prepared.");
+                    System.out.println("[Condition Satisfied]Transition: All participants prepared.");
                 }
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
@@ -86,7 +88,8 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceiveRollbackMsgs
                 state = Status.STATUS_ROLLING_BACK;
                 try {
-                    System.out.println(String.format("Transition: ReceivePrepareFailure. " +
+                    System.out.println(String.format("[After exception XAResourceWrapper.prepare(..)]" +
+                                                     "Transition: ReceivePrepareFailure. " +
                                                      "transaction state: %s, monitor state: %s",
                                                      MopUtils.stateToString(transaction.getStatus()),
                                                      MopUtils.stateToString(state)));
@@ -106,7 +109,8 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
                 rolledback.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("Transition: ReceiveRollbackSuccess. " +
+                    System.out.println(String.format("[After execute XAResourceWrapper.rollback(..)]"+
+                                                     "Transition: ReceiveRollbackSuccess. " +
                                                      "transaction state: %s, monitor state: %s",
                                                      MopUtils.stateToString(transaction.getStatus()),
                                                      MopUtils.stateToString(state)));
@@ -124,14 +128,16 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceiveCommitMsgs -> state SendAndReceiveCommitMsgs
                 committed.add(xar.getXAResource());
                 try {
-                    System.out.println(String.format("Transition: ReceiveCommitSuccess. " +
+                    System.out.println(String.format("[After execute XAResourceWrapper.commit(..)]" +
+                                                     "Transition: ReceiveCommitSuccess. " +
                                                      "transaction state: %s, monitor state: %s",
                                                       MopUtils.stateToString(transaction.getStatus()),
                                                       MopUtils.stateToString(state)));
                 } catch (Exception e) {}
             } else {
                 try {
-                    System.out.println(String.format("ERROR: Commit operation is not allowed in the state %s. " +
+                    System.out.println(String.format("[After execute XAResourceWrapper.commit(..)]" +
+                                                     "ERROR: Commit operation is not allowed in the state %s. " +
                                                      "transaction state: %s, monitor state: %s",
                                                      MopUtils.stateToString(state),
                                                      MopUtils.stateToString(transaction.getStatus()),
@@ -160,7 +166,8 @@ twoPhaseCommit(Transaction tx) {
              }
 
              try {
-                 System.out.println(String.format("Transition: EndTx. " +
+                 System.out.println(String.format("[After execute Transaction.commit()]" +
+                                                  "Transition: EndTx. " +
                                                   "transaction state: %s, monitor state: %s",
                                                   MopUtils.stateToString(transaction.getStatus()),
                                                   MopUtils.stateToString(state)));
