@@ -75,8 +75,6 @@ public class TwoPCTest extends TestCase {
         connection1.createStatement();
 
         Connection connection2 = poolingDataSource2.getConnection();
-        PooledConnectionProxy handle = (PooledConnectionProxy) connection2;
-        XAConnection xaConnection2 = (XAConnection) AbstractMockJdbcTest.getWrappedXAConnectionOf(handle.getPooledConnection());
         connection2.createStatement();
 
         tm.commit();

@@ -88,11 +88,8 @@ twoPhaseCommit(Transaction tx) {
                 // state SendAndReceivePrepareMsgs -> state SendAndReceiveRollbackMsgs
                 state = Status.STATUS_ROLLING_BACK;
                 try {
-                    System.out.println(String.format("[After exception XAResourceWrapper.prepare(..)]" +
-                                                     "Transition: ReceivePrepareFailure. " +
-                                                     "transaction state: %s, monitor state: %s",
-                                                     MopUtils.stateToString(transaction.getStatus()),
-                                                     MopUtils.stateToString(state)));
+                    System.out.println("[After exception XAResourceWrapper.prepare(..)]" +
+                                       "Transition: ReceivePrepareFailure. ");
                 } catch (Exception ex) {}
             } else if (state == Status.STATUS_ROLLING_BACK) {
                 // state SendAndReceiveRollbackMsgs -> state SendAndReceiveRollbackMsgs
