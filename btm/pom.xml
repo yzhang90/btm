@@ -259,7 +259,10 @@ public final class Version {
                 </executions>
                 <configuration>
                     <workingDirectory>${project.basedir}</workingDirectory>
-                    <executable>gen-monitor.sh</executable>
+                    <executable>python</executable>
+                    <arguments>
+                        <argument>gen_monitor.py</argument>
+                    </arguments>
                 </configuration>
             </plugin>
             <plugin>

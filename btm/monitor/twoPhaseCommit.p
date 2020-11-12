@@ -1,84 +1,79 @@
-event addResource: machine
-event startTx:()
-event sendPrepare: machine
-event receivePrepareSuccess: machine
-event receivePrepareFailure: machine
-event sendRollback: machine
-event receiveRollbackSuccess: machine
-event sendCommit: machine
-event receiveCommitSuccess: machine
-event endTx:()
+event addParticipant;
+event startTx;
+event prepareSuccess;
+event prepareFailure;
+event rollbackSuccess;
+event commitSuccess;
+event endTx;
 
-spec twoPhaseCommit {
-    var participants: set[machine];
-    var countPrepareMsgs: int = 0;
-    var countPreparedMachines: int = 0;
-    var countRollbackMsgs: int = 0;
-    var countRolledbackMachines: int  = 0;
-    var countCommitMsgs: int = 0;
-    var countCommittedMachines: int = 0; 
+spec twoPhaseCommit observes addParticipant, startTx, prepareSuccess, prepareFailure, rollbackSuccess, commitSuccess, endTx {
+    var participantNum: int;
+    var preparedNum: int;
+    var rolledbackNum: int;
+    var committedNum: int;
 
     start state Init {
-        on addResource do (m: machine) {
-            participants += m;
+        entry {
+            participantNum = 0;
+            preparedNum = 0;
+            rolledbackNum = 0;
+            committedNum = 0;
         }
 
-        on startTx do () {
-            goto SendAndReceivePrepareMsgs;       
+        on addParticipant do {
+            print "receive addParticipant event";
+            participantNum = participantNum + 1;
+        }
+
+        on startTx do {
+            print "receive startTx event and goto Prepare state";
+            goto Prepare;
         }
     }
 
-    state SendAndReceivePrepareMsgs {
-        on sendPrepare do (m: machine) {
-            countPrepareMsgs += 1;
-        }
-
-        on receivePrepareSuccess do (m: machine) {
-            countPreparedMachines += 1;
-            if (countPrepareMsgs == sizeof(participants) && countPreparedMachines == sizeof(participants)) {
-                goto SendAndReceiveCommitMsgs;
+    state Prepare {
+        on prepareSuccess do {
+            print "receive prepareSuccess event";
+            preparedNum = preparedNum + 1;
+            if (preparedNum == participantNum) {
+                print "goto Commit state";
+                goto Commit;
             }
         }
 
-        on receivePrepareFailure do (m: machine) {
-            goto SendAndReceiveRollbackMsgs;
+        on prepareFailure do {
+            print "receive prepareFailure event and goto Rollback state";
+            goto Rollback;
         }
     }
 
-    state SendAndReceiveRollbackMsgs {
-        on sendPrepare do (m: machine) {
+    state Rollback {
+        on prepareSuccess do {
         }
 
-        on receivePrepareSuccess do (m: machine) {
+        on prepareFailure do {
         }
 
-        on receivePrepareFailure do (m: machine) {
+        on rollbackSuccess do {
+            print "receive rollbackSuccess event";
+            rolledbackNum = rolledbackNum + 1;
         }
 
-        on sendRollback do (m: machine) {
-            countRollbackMsgs += 1;
-        }
-
-        on receiveRollbackSuccess do (m: machine) {
-            countRolledbackMachines += 1;
-        }
-
-        on endTx do () {
-            assert(countRollbackMsgs == sizeof(participants) && countRollbackMachines == sizeof(participants));
+        on endTx do {
+            assert (rolledbackNum == participantNum), "Rollback failed.";
+            print "RolledBack";
         }
     }
 
-    state SendAndReceiveCommitMsgs {
-        on sendCommit do (m: machine) {
-            countCommitMsgs += 1;
+    state Commit {
+        on commitSuccess do {
+            print "receive commitSuccess event";
+            committedNum = committedNum + 1;
         }
 
-        on receiveCommitSuccess do (m: machine) {
-            countCommitMachines += 1;
-        }
-
-        on endTx do () {
-            assert(countCommitMsgs == sizeof(participants) && countCommittedMachines == sizeof(participants));
+        on endTx do {
+            assert (committedNum == participantNum), "Commit failed.";
+            print "Committed";
         }
     }
 }

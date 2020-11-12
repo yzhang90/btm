@@ -4,3 +4,6 @@
 [submodule "btm/ext/javamop"]
 	path = btm/ext/javamop
 	url = https://github.com/runtimeverification/javamop.git
+[submodule "btm/ext/P"]
+	path = btm/ext/P
+	url = git@github.com:yzhang90/P.git
