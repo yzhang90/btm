@@ -1,92 +1,79 @@
-event addResource: machine;
+event addParticipant;
 event startTx;
-event sendPrepare: machine;
-event receivePrepareSuccess: machine;
-event receivePrepareFailure: machine;
-event sendRollback: machine;
-event receiveRollbackSuccess: machine;
-event sendCommit: machine;
-event receiveCommitSuccess: machine;
+event prepareSuccess;
+event prepareFailure;
+event rollbackSuccess;
+event commitSuccess;
 event endTx;
 
-spec twoPhaseCommit observes addResource, startTx, sendPrepare, receivePrepareSuccess, receivePrepareFailure, sendRollback, receiveRollbackSuccess, sendCommit, receiveCommitSuccess, endTx {
-    var participants: map[machine, bool];
-    var countPrepareMsgs: int;
-    var countPreparedMachines: int;
-    var countRollbackMsgs: int;
-    var countRolledbackMachines: int;
-    var countCommitMsgs: int;
-    var countCommittedMachines: int; 
+spec twoPhaseCommit observes addParticipant, startTx, prepareSuccess, prepareFailure, rollbackSuccess, commitSuccess, endTx {
+    var participantNum: int;
+    var preparedNum: int;
+    var rolledbackNum: int;
+    var committedNum: int;
 
     start state Init {
         entry {
-            countPrepareMsgs = 0;
-            countPreparedMachines = 0;
-            countRollbackMsgs = 0;
-            countRolledbackMachines = 0;
-            countCommitMsgs = 0;
-            countCommittedMachines = 0;
+            participantNum = 0;
+            preparedNum = 0;
+            rolledbackNum = 0;
+            committedNum = 0;
         }
-        on addResource do (m: machine) {
-            participants[m] = true;
+
+        on addParticipant do {
+            print "receive addParticipant event";
+            participantNum = participantNum + 1;
         }
 
         on startTx do {
-            goto SendAndReceivePrepareMsgs;       
+            print "receive startTx event and goto Prepare state";
+            goto Prepare;
         }
     }
 
-    state SendAndReceivePrepareMsgs {
-        on sendPrepare do (m: machine) {
-            countPrepareMsgs = countPrepareMsgs + 1;
-        }
-
-        on receivePrepareSuccess do (m: machine) {
-            countPreparedMachines = countPreparedMachines + 1;
-            if (countPrepareMsgs == sizeof(participants) && countPreparedMachines == sizeof(participants)) {
-                goto SendAndReceiveCommitMsgs;
+    state Prepare {
+        on prepareSuccess do {
+            print "receive prepareSuccess event";
+            preparedNum = preparedNum + 1;
+            if (preparedNum == participantNum) {
+                print "goto Commit state";
+                goto Commit;
             }
         }
 
-        on receivePrepareFailure do (m: machine) {
-            goto SendAndReceiveRollbackMsgs;
+        on prepareFailure do {
+            print "receive prepareFailure event and goto Rollback state";
+            goto Rollback;
         }
     }
 
-    state SendAndReceiveRollbackMsgs {
-        on sendPrepare do (m: machine) {
+    state Rollback {
+        on prepareSuccess do {
         }
 
-        on receivePrepareSuccess do (m: machine) {
+        on prepareFailure do {
         }
 
-        on receivePrepareFailure do (m: machine) {
-        }
-
-        on sendRollback do (m: machine) {
-            countRollbackMsgs = countRollbackMsgs + 1;
-        }
-
-        on receiveRollbackSuccess do (m: machine) {
-            countRolledbackMachines = countRolledbackMachines + 1;
+        on rollbackSuccess do {
+            print "receive rollbackSuccess event";
+            rolledbackNum = rolledbackNum + 1;
         }
 
         on endTx do {
-            assert(countRollbackMsgs == sizeof(participants) && countRolledbackMachines == sizeof(participants));
+            assert (rolledbackNum == participantNum), "Rollback failed.";
+            print "RolledBack";
         }
     }
 
-    state SendAndReceiveCommitMsgs {
-        on sendCommit do (m: machine) {
-            countCommitMsgs = countCommitMsgs + 1;
-        }
-
-        on receiveCommitSuccess do (m: machine) {
-            countCommittedMachines = countCommittedMachines + 1;
+    state Commit {
+        on commitSuccess do {
+            print "receive commitSuccess event";
+            committedNum = committedNum + 1;
         }
 
         on endTx do {
-            assert(countCommitMsgs == sizeof(participants) && countCommittedMachines == sizeof(participants));
+            assert (committedNum == participantNum), "Commit failed.";
+            print "Committed";
         }
     }
 }
